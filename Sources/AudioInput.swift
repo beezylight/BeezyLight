@@ -17,23 +17,10 @@ final class AudioInput {
             }
         }
     }
-    private var hasBluetooth: Bool {
-        didSet {
-            guard hasBluetooth != oldValue else { return }
-
-            timer?.invalidate()
-            guard hasBluetooth == true else { return }
-
-            timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-                NotificationCenter.default.post(name: .deviceIsRunningSomewhereDidChange, object: nil)
-            }
-        }
-    }
     
     init(_ callback: @escaping (Bool) -> Void) {
         self.devices = Set()
         self.callback = callback
-        self.hasBluetooth = false
     }
 
     private func updateDeviceList() {
@@ -42,7 +29,6 @@ final class AudioInput {
         guard devices != self.devices else { return }
 
         self.devices = devices
-        self.hasBluetooth = devices.contains(where: \.isBluetooh)
     }
     
     private lazy var listener = Debouncer(delay: 0.5) { [weak self] in
@@ -64,14 +50,7 @@ final class AudioInput {
 }
 
 extension AudioInput {
-    private func hasOrangeDot() -> Bool {
-        let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[CFString: Any]]
-        return (windows ?? []).contains { $0[kCGWindowName] as? String == "StatusIndicator" }
-    }
-
     private var isRunningSomewhere: Bool {
-        // FB12081267: bluetooth input devices always report that isRunningSomewhere == false
-        if hasBluetooth { return hasOrangeDot() }
         return devices.isRunningSomewhere() ?? false
     }
 }
