@@ -18,21 +18,26 @@ class BlinkStick {
     private let thread = DispatchQueue(label: "\(Bundle.main.bundleIdentifier ?? "unknown").\(String(describing: BlinkStick.self)).thread")
 
     private var device: IOHIDDevice?
-    private var data: [UInt8] = [1, 0, 0, 0]
+    private var data: [UInt8] = [0, 0, 0]
 
     fileprivate static func getInstance(_ pointer: UnsafeRawPointer) -> BlinkStick {
         return Unmanaged<BlinkStick>.fromOpaque(pointer).takeUnretainedValue()
     }
 
     func setColor(r: UInt8, g: UInt8, b: UInt8) {
-        data = [1, r, g, b] // if device is not connected, save value for later
+        data = [r, g, b] // if device is not connected, save value for later
         guard let device = device else { return }
-        IOHIDDeviceSetReport(device, kIOHIDReportTypeFeature, CFIndex(data[0]), data, data.count)
+
+        // hardcoded 8 LEDs for blinkstick square
+        for index in UInt8(0)...UInt8(7) {
+            let data: [UInt8] = [5, 0, index, r, g, b]
+            IOHIDDeviceSetReport(device, kIOHIDReportTypeFeature, CFIndex(data[0]), data, data.count)
+        }
     }
 
     func onConnected(_ deviceRef: IOHIDDevice) {
         device = deviceRef
-        setColor(r: data[1], g: data[2], b: data[3])
+        setColor(r: data[0], g: data[1], b: data[2])
     }
 
     func onDisconnected() {
